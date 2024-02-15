@@ -1,9 +1,10 @@
 package edu.vandy.simulator.managers.beings.runnableThreads;
 
-import java.util.List;
-
+import androidx.annotation.NonNull;
 import edu.vandy.simulator.managers.beings.BeingManager;
-import edu.vandy.simulator.utils.ExceptionUtils;
+import org.jetbrains.annotations.NotNull;
+
+import java.util.List;
 
 import static java.util.stream.Collectors.toList;
 
@@ -34,7 +35,7 @@ public class RunnableThreadsMgr
     public SimpleBeingRunnable newBeing() {
         // Return a new SimpleBeingRunnable instance.
         // TODO -- you fill in here replacing this statement with your solution.
-        return null;
+        return new SimpleBeingRunnable(this);
     }
 
     /**
@@ -45,17 +46,21 @@ public class RunnableThreadsMgr
     public void runSimulation() {
         // Call a method to create and start a thread for each being.
         // TODO -- you fill in here.
-        
+        beginBeingThreads();
 
         // Call a method that creates and starts a thread that's then
         //  used to wait for all the being threads to finish and
         //  return that thread to the caller.
         // TODO -- you fill in here.
-        
+        Thread waiterForBeingThreads = createAndStartWaiterForBeingThreads();
 
         // Block until the waiter thread has finished.
         // TODO -- you fill in here.
-        
+        try {
+            waiterForBeingThreads.join();
+        }catch (Exception ex){
+            error("Exceptions :"+ ex.getClass().getName() +" thrown while waiting for all being thread to complete");
+        }
     }
 
     /**
@@ -76,11 +81,23 @@ public class RunnableThreadsMgr
         // (though they are free to do so if they choose).
         //
         // TODO -- you fill in here.
-        
+        mBeingThreads = getBeings().stream()
+                .map(x -> new Thread(()->{
+                    x.run();
+
+                }))
+                .map( thread -> {
+                    thread.setUncaughtExceptionHandler((t, e) -> {
+                        error("Thread " + t.getName() + " threw an uncaught exception: " + e);
+                    });
+                    return thread;
+                })
+                .collect(toList());
+
 
         // Start all the threads in the List of Threads.
         // TODO -- you fill in here.
-        
+        mBeingThreads.stream().forEach( x -> x.start());
     }
 
     /**
@@ -97,15 +114,24 @@ public class RunnableThreadsMgr
         // the catch clause, which trigger the simulator to generate a
         // shutdownNow() request.
         // TODO -- you fill in here.
-        
+        Thread waitingThread = new Thread(() -> {
+            mBeingThreads.stream().forEach(thread -> {
+                try {
+                    thread.join();
+                } catch (Exception e) {
+                    // Handle the exception as needed (e.g., log it or re-interrupt the thread)
+                    error("Got an Exception : " + e.getClass().getName() + " while waiting for thread :"+ thread.getName() +" to finish gazing.");
+                }
+            });
+        });
 
         // Start running the thread.
         // TODO -- you fill in here.
-        
+        waitingThread.start();
 
         // Return the thread.
         // TODO -- you fill in here replacing this statement with your solution.
-        return null;
+        return waitingThread;
     }
 
     /**
@@ -120,4 +146,3 @@ public class RunnableThreadsMgr
         // class before calling this method.
     }
 }
-

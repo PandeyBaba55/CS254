@@ -48,6 +48,17 @@ public class SimpleBeingRunnable
         // for this being via a call to the appropriate Being super
         // class helper method.
         // TODO -- you fill in here.
-        
+        Palantir palantir = acquirePalantir();
+        if(palantir == null){
+            error( "Concurrency error occurs in the assignment implementation");
+        } else{
+            try{
+                palantir.gaze(this);
+            }  finally {
+                releasePalantir(palantir);
+            }
+        }
+
+
     }
 }
